@@ -9,7 +9,7 @@ detects a change.
 ## Installation
 
 ```shell
-go get -u github.com/tonpc64/gomon
+go get -u github.com/TonPC64/gomon
 ```
 
 ## Basic usage
