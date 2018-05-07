@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/acoshift/goreload/internal"
+	"github.com/TonPC64/gomon/internal"
 	shellwords "github.com/mattn/go-shellwords"
 	"gopkg.in/urfave/cli.v1"
 
@@ -21,24 +21,24 @@ import (
 
 var (
 	startTime     = time.Now()
-	logger        = log.New(os.Stdout, "[goreload] ", 0)
+	logger        = log.New(os.Stdout, "[gomon] ", 0)
 	buildError    error
 	colorGreen    = string([]byte{27, 91, 57, 55, 59, 51, 50, 59, 49, 109})
 	colorRed      = string([]byte{27, 91, 57, 55, 59, 51, 49, 59, 49, 109})
 	colorReset    = string([]byte{27, 91, 48, 109})
-	notifier      = notificator.New(notificator.Options{AppName: "Go Reload Build"})
+	notifier      = notificator.New(notificator.Options{AppName: "Go Monitor Build"})
 	notifications = false
 )
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "goreload"
+	app.Name = "gomon"
 	app.Usage = "A live reload utility for Go web applications."
 	app.Action = mainAction
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "bin,b",
-			Value: ".goreload",
+			Value: ".gomon",
 			Usage: "name of generated binary file",
 		},
 		cli.StringFlag{
@@ -71,7 +71,7 @@ func main() {
 		cli.StringFlag{
 			Name:  "logPrefix",
 			Usage: "Log prefix",
-			Value: "goreload",
+			Value: "gomon",
 		},
 		cli.BoolFlag{
 			Name:  "notifications",
@@ -82,7 +82,7 @@ func main() {
 		{
 			Name:      "run",
 			ShortName: "r",
-			Usage:     "Run the goreload",
+			Usage:     "Run the gomon",
 			Action:    mainAction,
 		},
 	}
