@@ -21,7 +21,7 @@ gomon .
 Options
 
 ```txt
-   --bin value, -b value         name of generated binary file (default: ".goreload")
+   --bin value, -b value         name of generated binary file (default: ".gomon")
    --path value, -t value        Path to watch files from (default: ".")
    --build value, -d value       Path to build files from (defaults to same value as --path)
    --excludeDir value, -x value  Relative directories to exclude
