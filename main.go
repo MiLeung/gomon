@@ -27,6 +27,7 @@ var (
 func main() {
 	app := cli.NewApp()
 	app.Name = "gomon"
+	app.Version = "0.0.1"
 	app.Usage = "A live reload utility for Go web applications."
 	app.Action = mainAction
 	app.Flags = []cli.Flag{
