@@ -12,22 +12,16 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
-
-	"github.com/0xAX/notificator"
 )
 
 var (
-	startTime     = time.Now()
-	logger        = log.New(os.Stdout, "[gomon] ", 0)
-	buildError    error
-	colorGreen    = string([]byte{27, 91, 57, 55, 59, 51, 50, 59, 49, 109})
-	colorRed      = string([]byte{27, 91, 57, 55, 59, 51, 49, 59, 49, 109})
-	colorReset    = string([]byte{27, 91, 48, 109})
-	notifier      = notificator.New(notificator.Options{AppName: "Go Monitor Build"})
-	notifications = false
+	startTime  = time.Now()
+	logger     = log.New(os.Stdout, "[gomon] ", 0)
+	colorGreen = string([]byte{27, 91, 57, 55, 59, 51, 50, 59, 49, 109})
+	colorRed   = string([]byte{27, 91, 57, 55, 59, 51, 49, 59, 49, 109})
+	colorReset = string([]byte{27, 91, 48, 109})
 )
 
 func main() {
@@ -60,10 +54,6 @@ func main() {
 			Name:  "all",
 			Usage: "reloads whenever any file changes, as opposed to reloading only on .go file change",
 		},
-		cli.BoolFlag{
-			Name:  "godep,g",
-			Usage: "use godep when building",
-		},
 		cli.StringFlag{
 			Name:  "buildArgs",
 			Usage: "Additional go build arguments",
@@ -72,10 +62,6 @@ func main() {
 			Name:  "logPrefix",
 			Usage: "Log prefix",
 			Value: "gomon",
-		},
-		cli.BoolFlag{
-			Name:  "notifications",
-			Usage: "Enables desktop notifications",
 		},
 	}
 	app.Commands = []cli.Command{
@@ -93,7 +79,6 @@ func main() {
 func mainAction(c *cli.Context) {
 	all := c.GlobalBool("all")
 	logPrefix := c.GlobalString("logPrefix")
-	notifications = c.GlobalBool("notifications")
 
 	logger.SetPrefix(fmt.Sprintf("[%s] ", logPrefix))
 
@@ -111,7 +96,7 @@ func mainAction(c *cli.Context) {
 	if buildPath == "" {
 		buildPath = c.GlobalString("path")
 	}
-	builder := internal.NewBuilder(buildPath, c.GlobalString("bin"), c.GlobalBool("godep"), wd, buildArgs)
+	builder := internal.NewBuilder(buildPath, c.GlobalString("bin"), wd, buildArgs)
 	runner := internal.NewRunner(filepath.Join(wd, builder.Binary()), c.Args()...)
 	runner.SetWriter(os.Stdout)
 
@@ -121,7 +106,7 @@ func mainAction(c *cli.Context) {
 	build(builder, runner, logger)
 
 	// scan for changes
-	scanChanges(c.GlobalString("path"), c.GlobalStringSlice("excludeDir"), all, func(path string) {
+	scanChanges(c.GlobalString("path"), c.GlobalStringSlice("excludeDir"), all, func() {
 		runner.Kill()
 		build(builder, runner, logger)
 	})
@@ -130,38 +115,19 @@ func mainAction(c *cli.Context) {
 func build(builder internal.Builder, runner internal.Runner, logger *log.Logger) {
 	logger.Println("Building...")
 
-	if notifications {
-		notifier.Push("Build Started!", "Building "+builder.Binary()+"...", "", notificator.UR_NORMAL)
-	}
 	err := builder.Build()
 	if err != nil {
-		buildError = err
 		logger.Printf("%sBuild failed%s\n", colorRed, colorReset)
 		fmt.Println(builder.Errors())
-		buildErrors := strings.Split(builder.Errors(), "\n")
-		if notifications {
-			if err := notifier.Push("Build FAILED!", buildErrors[1], "", notificator.UR_CRITICAL); err != nil {
-				logger.Println("Notification send failed")
-			}
-		}
 	} else {
-		buildError = nil
 		logger.Printf("%sBuild finished%s\n", colorGreen, colorReset)
 		runner.Run()
-
-		if notifications {
-			if err := notifier.Push("Build Succeded", "Build Finished!", "", notificator.UR_CRITICAL); err != nil {
-				logger.Println("Notification send failed")
-			}
-		}
 	}
 
 	time.Sleep(100 * time.Millisecond)
 }
 
-type scanCallback func(path string)
-
-func scanChanges(watchPath string, excludeDirs []string, allFiles bool, cb scanCallback) {
+func scanChanges(watchPath string, excludeDirs []string, allFiles bool, cb func()) {
 	for {
 		filepath.Walk(watchPath, func(path string, info os.FileInfo, err error) error {
 			if path == ".git" && info.IsDir() {
@@ -179,7 +145,7 @@ func scanChanges(watchPath string, excludeDirs []string, allFiles bool, cb scanC
 			}
 
 			if (allFiles || filepath.Ext(path) == ".go") && info.ModTime().After(startTime) {
-				cb(path)
+				cb()
 				startTime = time.Now()
 				return errors.New("done")
 			}
